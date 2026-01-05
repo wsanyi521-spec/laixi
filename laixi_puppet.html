@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>莱西木偶 - 非遗传承</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        serif: ['"Noto Serif SC"', 'SimSun', 'serif'],
+                        sans: ['"Inter"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&display=swap" rel="stylesheet">
+    <script type="importmap">
+    {
+        "imports": {
+            "react": "https://esm.sh/react@18.3.1",
+            "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
+            "lucide-react": "https://esm.sh/lucide-react@0.300.0?deps=react@18.3.1"
+        }
+    }
+    </script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        /* Custom scrollbar styles */
+        body {
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel" data-type="module">
+        import React, { useState, useEffect } from 'react';
+        import { createRoot } from 'react-dom/client';
+        import {
+            Menu, X, Search, Moon, Sun, ChevronLeft, ChevronRight,
+            BookOpen, Users, ShoppingBag, MessageCircle, MapPin,
+            Play, Download, Heart, Send, Scroll, Home, Film
+        } from 'lucide-react';
+
+        // ==========================================
+        // 1. 模拟数据 (Mock Data)
+        // ==========================================
+
+        const MOCK_DATA = {
+            carousel: [
+                { id: 1, title: "莱西木偶：指尖乾坤", desc: "国家级非物质文化遗产", color: "bg-[#8B1D1D]", target: "policy" },
+                { id: 2, title: "非遗进校园", desc: "薪火相传，研学热启", color: "bg-[#B45B3E]", target: "product" },
+                { id: 3, title: "文创·新国潮", desc: "传统技艺的现代新生", color: "bg-[#4A3B32]", target: "feature" },
+            ],
+            policies: [
+                { id: 101, title: "关于进一步加强非物质文化遗产保护工作的意见", date: "2024-05-12", source: "文化和旅游部", abstract: "强调系统性保护，推动非遗与旅游深度融合，让传统文化活在当下..." },
+                { id: 102, title: "山东省非物质文化遗产保护条例 (2025版)", date: "2025-01-10", source: "山东省人大", abstract: "明确了县级以上非遗代表性项目的扶持资金标准，鼓励社会力量参与保护..." },
+                { id: 103, title: "莱西市木偶戏产业发展三年行动计划", date: "2024-11-20", source: "莱西文旅局", abstract: "提出打造'中国木偶之乡'品牌，建设数字化非遗博物馆，推动木偶戏走出国门..." },
+            ],
+            comparison: [
+                { feature: "操作方式", laixi: "举偶操作，人偶同台", zhangzhou: "指掌乾坤，单人操作", quanzhou: "丝线提拉，极其细腻", shaanxi: "杖头支撑，高大魁梧" },
+                { feature: "造型风格", laixi: "拟人化强，机关精巧", zhangzhou: "小巧精致，布袋为身", quanzhou: "关节繁多，宛若真人", shaanxi: "造型夸张，脸谱化" },
+            ],
+            masters: [
+                { name: "姜玉涛", title: "省级传承人", intro: "从事木偶艺术50余年，创新木偶变脸技法，让木偶有了喜怒哀乐。", works: ["木偶变脸", "长袖舞"], image: "./Images/person1.jpg", imgAlt: "省级传承人姜玉涛" },
+                { name: "赵红", title: "市级传承人", intro: "专注于木偶戏进校园，用童话剧的形式让孩子们爱上传统文化。", works: ["童话剧系列"], image: "./Images/person2.jpg", imgAlt: "市级传承人赵红" }
+            ],
+            products: [
+                { id: 1, name: "“萌偶”盲盒", price: "¥59", tag: "热销", imgPlaceholder: "盲盒造型", image: "./Images/manghe1.jpg", imgAlt: "莱西木偶萌偶盲盒款式" },
+                { id: 2, name: "AR互动明信片", price: "¥29", tag: "科技", imgPlaceholder: "AR海报", image: "./Images/ARtu.jpg", imgAlt: "莱西木偶AR互动明信片" },
+                { id: 3, name: "木偶DIY包", price: "¥128", tag: "研学", imgPlaceholder: "材料包", image: "./Images/DIYpage.jpg", imgAlt: "莱西木偶DIY制作包" },
+            ],
+            videos: [
+                { id: 1, title: "莱西木偶IP动漫第一集", type: "动漫短剧", duration: "12:34", src: "./Images/1.mp4", cover: "./Images/gongyi1.jpg", plays: "1.2w" },
+                { id: 2, title: "非遗传承短剧《指尖乾坤》", type: "非遗短剧", duration: "05:20", src: "./Images/2.mp4", cover: "./Images/biaoyan.jpg", plays: "8.5k" },
+                { id: 3, title: "木偶制作微距赏析", type: "纪录片", duration: "03:45", src: "./Images/3.mp4", cover: "./Images/person1.jpg", plays: "5.6k" },
+                { id: 4, title: "非遗小剧场：大闹天宫", type: "儿童剧", duration: "08:15", src: "./Images/4.mp4", cover: "./Images/manghe1.jpg", plays: "2.3w" },
+                { id: 5, title: "莱西木偶：前世今生", type: "纪录片", duration: "10:00", src: "./Images/5.mp4", cover: "./Images/biaoyan.jpg", plays: "1.5w" },
+                { id: 6, title: "偶遇·奇缘", type: "动漫短剧", duration: "06:30", src: "./Images/6.mp4", cover: "./Images/gongyi1.jpg", plays: "9.2k" },
+            ]
+        };
+
+        // ==========================================
+        // 2. 核心组件 (Components)
+        // ==========================================
+
+        // 装饰性标题组件
+        const SectionTitle = ({ children }) => (
+            <div className="flex items-center mb-6">
+                <div className="h-8 w-1 bg-[#8B1D1D] rounded-full mr-3"></div>
+                <h2 className="text-2xl font-serif font-bold text-[#4A3B32] dark:text-[#E5E0D8] tracking-wide">
+                    {children}
+                </h2>
+                <div className="flex-1 border-t border-[#8B1D1D]/20 ml-4 mt-1 border-dashed"></div>
+            </div>
+        );
+
+        // 改进后的卡片组件，增加边框纹理
+        const Card = ({ children, className = "" }) => (
+            <div className={`bg-white dark:bg-[#2C241F] rounded-lg border border-[#E8DCC5] dark:border-[#4A3B32] shadow-sm hover:shadow-xl transition-all duration-300 relative group overflow-hidden ${className}`}>
+                {/* 装饰性边角 - 仅在hover时显示明显 */}
+                <div className="absolute top-0 left-0 w-2 h-2 border-t-2 border-l-2 border-[#8B1D1D] opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <div className="absolute top-0 right-0 w-2 h-2 border-t-2 border-r-2 border-[#8B1D1D] opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <div className="absolute bottom-0 left-0 w-2 h-2 border-b-2 border-l-2 border-[#8B1D1D] opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <div className="absolute bottom-0 right-0 w-2 h-2 border-b-2 border-r-2 border-[#8B1D1D] opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                {children}
+            </div>
+        );
+
+        const Toast = ({ msg, show }) => {
+            if (!show) return null;
+            return (
+                <div className="fixed top-24 left-1/2 transform -translate-x-1/2 bg-[#8B1D1D] text-[#F7F3E8] px-8 py-3 rounded-md shadow-2xl z-50 animate-bounce font-serif border border-[#B45B3E]">
+                    <span className="mr-2">◈</span> {msg} <span className="ml-2">◈</span>
+                </div>
+            );
+        };
+
+        function App() {
+            const [activeTab, setActiveTab] = useState('home');
+            const [darkMode, setDarkMode] = useState(false);
+            const [menuOpen, setMenuOpen] = useState(false);
+            const [toast, setToast] = useState({ show: false, msg: '' });
+            const [currentSlide, setCurrentSlide] = useState(0);
+            const [searchQuery, setSearchQuery] = useState("");
+            const [guestbook, setGuestbook] = useState([
+                { name: "木偶迷", content: "莱西木偶的机关太精妙了，希望能看到更多巡演！", date: "2025-03-01" }
+            ]);
+            const [newComment, setNewComment] = useState("");
+
+            const showToast = (msg) => {
+                setToast({ show: true, msg });
+                setTimeout(() => setToast({ show: false, msg: '' }), 3000);
+            };
+
+            const toggleTheme = () => {
+                setDarkMode(!darkMode);
+                if (!darkMode) {
+                    document.documentElement.classList.add('dark');
+                } else {
+                    document.documentElement.classList.remove('dark');
+                }
+            };
+
+            useEffect(() => {
+                if (activeTab !== 'home') return;
+                const timer = setInterval(() => {
+                    setCurrentSlide((prev) => (prev + 1) % MOCK_DATA.carousel.length);
+                }, 5000);
+                return () => clearInterval(timer);
+            }, [activeTab]);
+
+            const handleNavClick = (tab) => {
+                setActiveTab(tab);
+                setMenuOpen(false);
+                window.scrollTo(0, 0);
+            };
+
+            // --- 辅助组件：返回首页按钮 ---
+            const BackToHome = () => (
+                <button
+                    onClick={() => handleNavClick('home')}
+                    className="inline-flex items-center text-[#8B7E74] hover:text-[#8B1D1D] mb-4 font-serif transition-colors group text-sm border border-[#E8DCC5] dark:border-[#4A3B32] px-3 py-1.5 rounded-full bg-white/50 dark:bg-transparent"
+                >
+                    <ChevronLeft className="w-4 h-4 mr-1 group-hover:-translate-x-1 transition-transform" />
+                    <span>返回首页</span>
+                </button>
+            );
+
+            // --- 首页 ---
+            const renderHome = () => (
+                <div className="space-y-10 animate-fadeIn">
+                    {/* 戏台式轮播图 */}
+                    <div className="relative mx-auto max-w-5xl">
+                        {/* 顶部装饰条 */}
+                        <div className="h-2 bg-[#4A3B32] w-full rounded-t-lg flex justify-between items-center px-4">
+                            <div className="w-16 h-1 bg-[#B45B3E]"></div>
+                            <div className="w-16 h-1 bg-[#B45B3E]"></div>
+                        </div>
+
+                        <div className="relative h-64 md:h-[420px] w-full overflow-hidden bg-black shadow-2xl border-x-8 border-[#4A3B32]">
+                            {MOCK_DATA.carousel.map((slide, index) => (
+                                <div
+                                    key={slide.id}
+                                    onClick={() => handleNavClick(slide.target)}
+                                    className={`absolute inset-0 transition-all duration-1000 ease-in-out flex flex-col justify-center items-center text-[#F7F3E8] p-6 text-center cursor-pointer
+                        ${index === currentSlide ? 'opacity-100 scale-100 z-10 pointer-events-auto' : 'opacity-0 scale-95 z-0 pointer-events-none'}
+                        ${slide.color}
+                      `}
+                                    style={{ backgroundImage: 'radial-gradient(circle, rgba(0,0,0,0) 0%, rgba(0,0,0,0.4) 100%)' }}
+                                >
+                                    <div className="border-2 border-[#F7F3E8]/30 p-8 md:p-12 relative">
+                                        <div className="absolute top-2 left-2 w-4 h-4 border-t-2 border-l-2 border-[#F7F3E8]/50"></div>
+                                        <div className="absolute top-2 right-2 w-4 h-4 border-t-2 border-r-2 border-[#F7F3E8]/50"></div>
+                                        <div className="absolute bottom-2 left-2 w-4 h-4 border-b-2 border-l-2 border-[#F7F3E8]/50"></div>
+                                        <div className="absolute bottom-2 right-2 w-4 h-4 border-b-2 border-r-2 border-[#F7F3E8]/50"></div>
+
+                                        <h2 className="text-3xl md:text-5xl font-serif font-bold mb-6 tracking-widest">{slide.title}</h2>
+                                        <p className="text-lg md:text-xl font-light opacity-90 tracking-wider mb-6">{slide.desc}</p>
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); handleNavClick(slide.target); }}
+                                            className="bg-transparent border border-[#F7F3E8] text-[#F7F3E8] px-6 py-2 hover:bg-[#F7F3E8] hover:text-[#8B1D1D] transition-colors font-serif"
+                                        >
+                                            查看详情
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                            {/* 帷幕阴影效果 */}
+                            <div className="absolute top-0 left-0 right-0 h-4 bg-gradient-to-b from-black/50 to-transparent z-20"></div>
+
+                            <button onClick={() => setCurrentSlide((curr) => (curr - 1 + 3) % 3)} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/50 hover:text-white z-20"><ChevronLeft size={32} /></button>
+                            <button onClick={() => setCurrentSlide((curr) => (curr + 1) % 3)} className="absolute right-4 top-1/2 -translate-y-1/2 text-white/50 hover:text-white z-20"><ChevronRight size={32} /></button>
+                        </div>
+
+                        {/* 底部台基 */}
+                        <div className="h-4 bg-[#4A3B32] w-full rounded-b-lg shadow-lg flex justify-center space-x-2 items-center">
+                            {[0, 1, 2].map(i => (
+                                <div key={i} className={`w-2 h-2 rounded-full ${i === currentSlide ? 'bg-[#B45B3E]' : 'bg-[#2C241F]'}`}></div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* 快速导航 - 匾额风格 */}
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4 px-2">
+                        {[
+                            { id: 'policy', label: '政策·态势', icon: <BookOpen className="w-6 h-6" />, desc: '前沿资讯' },
+                            { id: 'feature', label: '木偶·技艺', icon: <Users className="w-6 h-6" />, desc: '匠心独运' },
+                            { id: 'product', label: '文创·研学', icon: <ShoppingBag className="w-6 h-6" />, desc: '好物雅集' },
+                            { id: 'video', label: '偶韵新番', icon: <Film className="w-6 h-6" />, desc: '视听盛宴' },
+                            { id: 'interact', label: '传承·互动', icon: <MessageCircle className="w-6 h-6" />, desc: '畅所欲言' },
+                        ].map(item => (
+                            <div
+                                key={item.id}
+                                onClick={() => handleNavClick(item.id)}
+                                className="group cursor-pointer bg-[#FDFBF7] dark:bg-[#2C241F] p-1 rounded-lg shadow-sm hover:shadow-lg transition-all hover:-translate-y-1"
+                            >
+                                <div className="border border-[#E8DCC5] dark:border-[#4A3B32] p-5 rounded flex flex-col items-center text-center h-full justify-center group-hover:border-[#8B1D1D]/30 transition-colors">
+                                    <div className="bg-[#8B1D1D]/10 dark:bg-[#8B1D1D]/20 p-3 rounded-full mb-3 text-[#8B1D1D] dark:text-[#E5E0D8]">
+                                        {item.icon}
+                                    </div>
+                                    <h3 className="font-serif font-bold text-[#4A3B32] dark:text-[#E5E0D8] text-lg">{item.label}</h3>
+                                    <p className="text-xs text-[#8B7E74] mt-1 font-serif">{item.desc}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* 传承人寄语 - 卷轴风格 */}
+                    <div className="relative bg-[#FFFBF0] dark:bg-[#2C241F] p-8 rounded-sm shadow-inner mx-4 my-8 border-y-4 border-[#E8DCC5] dark:border-[#4A3B32]">
+                        <div className="absolute top-0 left-0 bottom-0 w-2 bg-[#E8DCC5] dark:bg-[#3E342F] border-r border-[#D4C5B0]"></div>
+                        <div className="absolute top-0 right-0 bottom-0 w-2 bg-[#E8DCC5] dark:bg-[#3E342F] border-l border-[#D4C5B0]"></div>
+                        <div className="flex flex-col items-center text-center">
+                            <Heart className="w-6 h-6 text-[#8B1D1D] mb-3" />
+                            <p className="text-[#4A3B32] dark:text-[#B0A69D] text-lg font-serif italic leading-loose max-w-2xl">
+                                “木偶不仅是木头做的，更是心做的。<br />每一根丝线，都牵动着传统文化的脉搏。”
+                            </p>
+                            <p className="mt-4 text-sm font-bold text-[#8B1D1D]">— 姜玉涛</p>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            // --- 政策态势 ---
+            const renderPolicy = () => {
+                const filteredPolicies = MOCK_DATA.policies.filter(p =>
+                    p.title.includes(searchQuery) || p.abstract.includes(searchQuery)
+                );
+
+                return (
+                    <div className="space-y-8 animate-fadeIn">
+                        <BackToHome />
+                        <SectionTitle>政策文献与态势</SectionTitle>
+
+                        {/* 搜索框 - 雅致风格 */}
+                        <div className="relative max-w-xl mx-auto">
+                            <input
+                                type="text"
+                                placeholder="搜索政策关键词（如：莱西木偶...）"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full pl-12 pr-4 py-3 rounded-full border-2 border-[#E8DCC5] bg-[#FDFBF7] dark:bg-[#2C241F] dark:border-[#4A3B32] focus:border-[#8B1D1D] outline-none transition-colors font-serif"
+                            />
+                            <Search className="absolute left-4 top-3.5 text-[#8B7E74] w-5 h-5" />
+                        </div>
+
+                        <div className="space-y-4">
+                            {filteredPolicies.map(policy => (
+                                <Card key={policy.id} className="p-6">
+                                    <div className="flex flex-col md:flex-row md:items-center justify-between mb-3">
+                                        <h3 className="text-lg font-serif font-bold text-[#2C1810] dark:text-[#E5E0D8] group-hover:text-[#8B1D1D] transition-colors">
+                                            {policy.title}
+                                        </h3>
+                                        <span className="text-xs font-serif bg-[#F3EFE0] dark:bg-[#3E342F] px-3 py-1 rounded-full text-[#6B5B51] mt-2 md:mt-0 inline-block w-fit">
+                                            {policy.date}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center text-xs text-[#B45B3E] mb-3 font-bold">
+                                        <span className="w-2 h-2 bg-[#B45B3E] rounded-full mr-2"></span>
+                                        {policy.source}
+                                    </div>
+                                    <p className="text-[#5D5148] dark:text-[#9E948D] text-sm leading-7 font-serif border-l-2 border-[#E8DCC5] dark:border-[#4A3B32] pl-4">
+                                        {policy.abstract}
+                                    </p>
+                                </Card>
+                            ))}
+                        </div>
+                    </div>
+                );
+            };
+
+            // --- 木偶特色 ---
+            const renderFeature = () => (
+                <div className="space-y-10 animate-fadeIn">
+                    <BackToHome />
+                    <SectionTitle>非遗技艺解析</SectionTitle>
+
+                    <div className="grid md:grid-cols-2 gap-8">
+                        <Card className="p-0 flex flex-col h-full">
+                            {/* 请将下方的 src 替换为您上传的图片路径 
+                    (例如: src="/images/your-upload.jpg") 
+                  */}
+                            <div className="h-56 bg-[#E8DCC5] dark:bg-[#221C18] relative overflow-hidden group-hover:scale-[1.02] transition-transform duration-700">
+                                <img
+                                    src="./Images/gongyi1.jpg"
+                                    alt="莱西木偶制作工艺-刻木为骨"
+                                    className="w-full h-full object-cover opacity-90 hover:opacity-100 transition-opacity"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent pointer-events-none"></div>
+                                <span className="absolute bottom-3 left-4 text-[#F7F3E8] font-serif text-sm z-10 font-bold tracking-wider flex items-center">
+                                    <div className="w-1 h-4 bg-[#B45B3E] mr-2"></div>
+                                    工序 · 刻木为骨
+                                </span>
+                            </div>
+                            <div className="p-6 flex-1 bg-[#FDFBF7] dark:bg-[#2C241F]">
+                                <h3 className="font-serif font-bold text-xl mb-3 text-[#4A3B32] dark:text-[#E5E0D8]">精妙内芯</h3>
+                                <p className="text-[#5D5148] dark:text-[#9E948D] leading-relaxed font-serif">
+                                    莱西木偶头雕刻细腻，机关设置在内部，可以控制眼睛开合、嘴巴张合，甚至能展现喜怒哀乐的微表情。
+                                </p>
+                            </div>
+                        </Card>
+
+                        <Card className="p-0 flex flex-col h-full">
+                            <div className="h-56 bg-[#E8DCC5] dark:bg-[#221C18] relative overflow-hidden group-hover:scale-[1.02] transition-transform duration-700">
+                                <img
+                                    src="./Images/biaoyan.jpg"
+                                    alt="莱西木偶表演-人偶同台"
+                                    className="w-full h-full object-cover opacity-90 hover:opacity-100 transition-opacity"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent pointer-events-none"></div>
+                                <span className="absolute bottom-3 left-4 text-[#F7F3E8] font-serif text-sm z-10 font-bold tracking-wider flex items-center">
+                                    <div className="w-1 h-4 bg-[#B45B3E] mr-2"></div>
+                                    表演 · 人偶同台
+                                </span>
+                            </div>
+                            <div className="p-6 flex-1 bg-[#FDFBF7] dark:bg-[#2C241F]">
+                                <h3 className="font-serif font-bold text-xl mb-3 text-[#4A3B32] dark:text-[#E5E0D8]">人偶同台</h3>
+                                <p className="text-[#5D5148] dark:text-[#9E948D] leading-relaxed font-serif">
+                                    采用杖头木偶形式，表演者举偶于头顶，人偶同台，表演者需要具备深厚的戏曲功底和臂力。
+                                </p>
+                            </div>
+                        </Card>
+                    </div>
+
+                    <div className="bg-[#FFFBF0] dark:bg-[#2C241F] rounded-lg border border-[#E8DCC5] dark:border-[#4A3B32] p-8 shadow-sm">
+                        <h3 className="font-serif font-bold text-lg mb-6 text-center text-[#4A3B32] dark:text-[#E5E0D8]">
+                            <span className="border-b-2 border-[#8B1D1D] pb-1">四大流派 · 技艺对谈</span>
+                        </h3>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left border-collapse">
+                                <thead>
+                                    <tr className="border-b-2 border-[#8B1D1D] text-[#8B1D1D]">
+                                        <th className="px-4 py-3 font-serif whitespace-nowrap">维度</th>
+                                        <th className="px-4 py-3 font-serif font-bold bg-[#8B1D1D]/5 whitespace-nowrap">莱西木偶</th>
+                                        <th className="px-4 py-3 font-serif whitespace-nowrap">漳州布袋</th>
+                                        <th className="px-4 py-3 font-serif whitespace-nowrap">泉州提线</th>
+                                        <th className="px-4 py-3 font-serif whitespace-nowrap">陕西杖头</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="font-serif text-sm">
+                                    {MOCK_DATA.comparison.map((row, idx) => (
+                                        <tr key={idx} className="border-b border-[#E8DCC5] dark:border-[#4A3B32] hover:bg-white dark:hover:bg-[#3E342F] transition-colors">
+                                            <td className="px-4 py-4 font-bold text-[#4A3B32] dark:text-[#E5E0D8]">{row.feature}</td>
+                                            <td className="px-4 py-4 text-[#B45B3E] bg-[#8B1D1D]/5 font-medium">{row.laixi}</td>
+                                            <td className="px-4 py-4 text-[#8B7E74]">{row.zhangzhou}</td>
+                                            <td className="px-4 py-4 text-[#8B7E74]">{row.quanzhou}</td>
+                                            <td className="px-4 py-4 text-[#8B7E74]">{row.shaanxi}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            // --- 产品矩阵 ---
+            const renderProduct = () => (
+                <div className="space-y-10 animate-fadeIn">
+                    <BackToHome />
+                    <SectionTitle>文创雅集 & 研学</SectionTitle>
+
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+                        {MOCK_DATA.products.map(product => (
+                            <Card key={product.id} className="flex flex-col group">
+                                <div className="h-44 bg-[#F5F5F0] dark:bg-[#221C18] flex items-center justify-center text-[#8B7E74] relative overflow-hidden">
+                                    <img src={product.image} alt={product.imgAlt || product.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                                    <div className="absolute top-0 right-4 w-8 h-12 bg-[#8B1D1D] text-[#F7F3E8] text-xs flex items-center justify-center rounded-b-lg shadow-md z-20 font-serif writing-vertical-rl py-2">
+                                        {product.tag}
+                                    </div>
+                                    <div className="absolute inset-0 bg-[#8B1D1D]/0 group-hover:bg-[#8B1D1D]/5 transition-colors"></div>
+                                </div>
+                                <div className="p-5 flex-1 flex flex-col justify-between">
+                                    <div>
+                                        <h4 className="font-serif font-bold text-[#4A3B32] dark:text-[#E5E0D8] text-lg">{product.name}</h4>
+                                        <p className="text-[#B45B3E] font-bold mt-2 font-serif text-xl">{product.price}</p>
+                                    </div>
+                                    <button className="mt-4 w-full border border-[#4A3B32] text-[#4A3B32] dark:border-[#9E948D] dark:text-[#9E948D] hover:bg-[#8B1D1D] hover:border-[#8B1D1D] hover:text-white text-sm py-2 transition-all duration-300 font-serif">
+                                        赏析详情
+                                    </button>
+                                </div>
+                            </Card>
+                        ))}
+                    </div>
+
+                    <div className="grid md:grid-cols-2 gap-6">
+                        <Card className="p-6 border-none bg-gradient-to-br from-[#FDFBF7] to-[#F3EFE0] dark:from-[#2C241F] dark:to-[#221C18]">
+                            <div className="flex items-center mb-4">
+                                <div className="p-2 bg-[#4A3B32] rounded text-[#F7F3E8] mr-3"><Play size={20} /></div>
+                                <h3 className="font-serif font-bold text-lg text-[#4A3B32] dark:text-[#E5E0D8]">木偶光影剧场</h3>
+                            </div>
+                            <div className="aspect-video bg-black/10 dark:bg-black/40 rounded flex items-center justify-center text-[#8B7E74] border border-[#E8DCC5] dark:border-[#4A3B32]">
+                                <span className="font-serif">[ 预告片播放区 ]</span>
+                            </div>
+                        </Card>
+                        <Card className="p-6 border-none bg-gradient-to-br from-[#FDFBF7] to-[#F3EFE0] dark:from-[#2C241F] dark:to-[#221C18]">
+                            <div className="flex items-center mb-4">
+                                <div className="p-2 bg-[#B45B3E] rounded text-[#F7F3E8] mr-3"><MapPin size={20} /></div>
+                                <h3 className="font-serif font-bold text-lg text-[#4A3B32] dark:text-[#E5E0D8]">AR 寻宝体验</h3>
+                            </div>
+                            <div className="h-full min-h-[140px] border-2 border-dashed border-[#B45B3E]/30 rounded flex flex-col items-center justify-center text-[#B45B3E]">
+                                <span className="text-sm font-serif">扫描纹样 · 唤醒木偶</span>
+                            </div>
+                        </Card>
+                    </div>
+
+                    {/* 研学预约 - 仿信笺 */}
+                    <div className="bg-[#FFFBF0] dark:bg-[#2C241F] p-8 shadow-lg border border-[#E8DCC5] dark:border-[#4A3B32] relative overflow-hidden">
+                        <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
+                            <Scroll size={120} color="#8B1D1D" />
+                        </div>
+                        <h3 className="font-serif font-bold text-xl mb-6 text-[#4A3B32] dark:text-[#E5E0D8] flex items-center">
+                            <span className="w-1 h-6 bg-[#8B1D1D] mr-3"></span>
+                            研学活动 · 拜帖预约
+                        </h3>
+                        <form className="space-y-5 relative z-10" onSubmit={(e) => { e.preventDefault(); showToast("拜帖已呈送，请静候佳音"); }}>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <input required type="text" placeholder="阁下尊姓大名" className="input-traditional" />
+                                <input required type="tel" placeholder="联络方式" className="input-traditional" />
+                                <input required type="number" placeholder="同行人数" className="input-traditional" />
+                                <input type="date" className="input-traditional" />
+                            </div>
+                            <button type="submit" className="w-full bg-[#8B1D1D] hover:bg-[#A32222] text-[#F7F3E8] font-serif font-bold py-3 rounded shadow-md transition-all hover:shadow-lg mt-4">
+                                呈送预约
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            );
+
+            // --- 光影剧场 (偶韵新番) ---
+            const renderVideo = () => (
+                <div className="space-y-10 animate-fadeIn">
+                    <BackToHome />
+                    <SectionTitle>偶韵新番</SectionTitle>
+
+                    {/* Featured Video - 使用视频标签 */}
+                    <div className="bg-black rounded-lg overflow-hidden shadow-2xl border-4 border-[#4A3B32] relative group">
+                        <div className="aspect-video relative">
+                            <video
+                                src="./Images/1.mp4"
+                                poster="./Images/biaoyan.jpg"
+                                controls
+                                width="100%"
+                                className="w-full h-full object-contain bg-black"
+                            >
+                                您的浏览器不支持视频播放。
+                            </video>
+                            <div className="absolute bottom-4 left-4 bg-black/60 px-3 py-1 rounded text-[#F7F3E8] font-serif text-sm pointer-events-none">
+                                重磅首映：莱西木偶IP动漫第一集
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Video Grid */}
+                    <div>
+                        <h3 className="text-xl font-serif font-bold text-[#4A3B32] dark:text-[#E5E0D8] mb-6 flex items-center">
+                            <Film className="w-6 h-6 mr-2 text-[#8B1D1D]" />
+                            热门片单
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {MOCK_DATA.videos.map(video => (
+                                <Card key={video.id} className="group flex flex-col h-full border-none shadow-md overflow-hidden bg-[#FDFBF7] dark:bg-[#2C241F]">
+                                    <div className="aspect-video bg-black relative">
+                                        <video
+                                            src={video.src}
+                                            poster={video.cover}
+                                            controls
+                                            width="100%"
+                                            className="w-full h-full object-contain"
+                                        />
+                                    </div>
+                                    <div className="p-4 flex-1 flex flex-col justify-between border-t border-[#E8DCC5] dark:border-[#4A3B32]">
+                                        <div>
+                                            <div className="flex justify-between items-start mb-2">
+                                                <span className="text-xs text-[#B45B3E] border border-[#B45B3E]/30 px-1.5 py-0.5 rounded font-serif">{video.type}</span>
+                                                <span className="text-xs text-[#8B7E74] flex items-center font-serif"><Play size={10} className="mr-1" /> {video.plays}</span>
+                                            </div>
+                                            <h4 className="font-serif font-bold text-[#4A3B32] dark:text-[#E5E0D8] text-lg leading-tight mb-2">{video.title}</h4>
+                                        </div>
+                                        <p className="text-xs text-[#8B7E74] font-serif mt-2">
+                                            {video.type === "动漫短剧" ? "莱西木偶IP改编大作" : "非遗技艺实录"}
+                                        </p>
+                                    </div>
+                                </Card>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            );
+
+            // --- 互动交流 ---
+            const renderInteract = () => (
+                <div className="space-y-10 animate-fadeIn">
+                    <BackToHome />
+                    <SectionTitle>传承 · 薪火</SectionTitle>
+
+                    <div className="space-y-6">
+                        {MOCK_DATA.masters.map((master, idx) => (
+                            <Card key={idx} className="p-6 flex flex-col md:flex-row gap-6 items-center md:items-start">
+                                <div className="w-28 h-28 rounded-full border-4 border-[#FDFBF7] shadow-lg overflow-hidden flex-shrink-0 bg-[#E8DCC5]">
+                                    <img src={master.image} alt={master.imgAlt || master.name} className="w-full h-full object-cover" />
+                                </div>
+                                <div className="text-center md:text-left flex-1">
+                                    <h3 className="text-2xl font-serif font-bold text-[#4A3B32] dark:text-[#E5E0D8] mb-1">
+                                        {master.name}
+                                        <span className="text-sm font-sans font-normal text-[#F7F3E8] bg-[#8B1D1D] px-2 py-0.5 ml-3 rounded-sm align-middle">
+                                            {master.title}
+                                        </span>
+                                    </h3>
+                                    <div className="h-px w-12 bg-[#B45B3E] my-3 mx-auto md:mx-0"></div>
+                                    <p className="text-[#5D5148] dark:text-[#9E948D] leading-relaxed font-serif mb-4">{master.intro}</p>
+                                    <div className="flex flex-wrap gap-2 justify-center md:justify-start">
+                                        {master.works.map(w => (
+                                            <span key={w} className="border border-[#4A3B32]/20 dark:border-[#9E948D]/30 text-[#4A3B32] dark:text-[#9E948D] px-3 py-1 text-xs font-serif">
+                                                《{w}》
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            </Card>
+                        ))}
+                    </div>
+
+                    <div className="bg-[#FDFBF7] dark:bg-[#2C241F] rounded-lg border border-[#E8DCC5] dark:border-[#4A3B32] p-6">
+                        <h3 className="font-serif font-bold text-lg mb-4 text-[#4A3B32] dark:text-[#E5E0D8] flex items-center">
+                            <MessageCircle className="w-5 h-5 mr-2 text-[#8B1D1D]" />
+                            茶馆留言
+                        </h3>
+
+                        <div className="space-y-4 mb-6 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+                            {guestbook.map((post, idx) => (
+                                <div key={idx} className="bg-white dark:bg-[#3E342F] p-4 border-l-4 border-[#B45B3E] shadow-sm">
+                                    <div className="flex justify-between items-center mb-2">
+                                        <span className="font-bold text-sm text-[#4A3B32] dark:text-[#E5E0D8] font-serif">{post.name}</span>
+                                        <span className="text-xs text-[#8B7E74] font-serif">{post.date}</span>
+                                    </div>
+                                    <p className="text-[#5D5148] dark:text-[#9E948D] text-sm font-serif">{post.content}</p>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="flex gap-3">
+                            <input
+                                type="text"
+                                value={newComment}
+                                onChange={(e) => setNewComment(e.target.value)}
+                                placeholder="看官请留步，赐教一二..."
+                                className="flex-1 input-traditional"
+                                onKeyPress={(e) => e.key === 'Enter' && newComment && (
+                                    setGuestbook([...guestbook, { name: "访客", content: newComment, date: "刚刚" }]) || setNewComment("")
+                                )}
+                            />
+                            <button
+                                onClick={() => {
+                                    if (!newComment) return;
+                                    setGuestbook([...guestbook, { name: "访客", content: newComment, date: "刚刚" }]);
+                                    setNewComment("");
+                                    showToast("谢看官赐墨！");
+                                }}
+                                className="bg-[#4A3B32] text-[#F7F3E8] px-6 rounded hover:bg-[#2C1810] font-serif transition-colors"
+                            >
+                                <Send className="w-5 h-5" />
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            // ==========================================
+            // 6. 主布局 (Main Layout)
+            // ==========================================
+            return (
+                <div className={`min-h-screen transition-colors duration-500 font-sans selection:bg-[#8B1D1D] selection:text-white ${darkMode ? 'dark bg-[#1A1614]' : 'bg-[#F2EFE6]'}`}>
+                    <Toast show={toast.show} msg={toast.msg} />
+
+                    {/* 顶部导航 - 仿木质结构 */}
+                    <header className="sticky top-0 z-50 bg-[#FDFBF7]/95 dark:bg-[#2C241F]/95 backdrop-blur-md border-b-4 border-[#8B1D1D] shadow-md">
+                        <div className="container mx-auto px-4 h-20 flex justify-between items-center">
+                            {/* Logo */}
+                            <div
+                                className="flex items-center space-x-3 cursor-pointer group"
+                                onClick={() => handleNavClick('home')}
+                            >
+                                <div className="w-10 h-10 bg-[#8B1D1D] rounded-sm flex items-center justify-center text-[#F7F3E8] shadow-inner border border-[#B45B3E] group-hover:rotate-6 transition-transform">
+                                    <span className="font-serif font-bold text-xl">莱</span>
+                                </div>
+                                <div className="flex flex-col">
+                                    <h1 className="text-2xl font-serif font-bold text-[#4A3B32] dark:text-[#E5E0D8] tracking-widest">莱西木偶</h1>
+                                    <span className="text-[10px] text-[#8B1D1D] font-serif tracking-[0.2em] uppercase">非遗传承 · 匠心筑梦</span>
+                                </div>
+                            </div>
+
+                            {/* PC端导航 */}
+                            <nav className="hidden md:flex space-x-1">
+                                {[
+                                    { id: 'home', label: '首页' },
+                                    { id: 'policy', label: '政策态势' },
+                                    { id: 'feature', label: '木偶特色' },
+                                    { id: 'product', label: '文创研学' },
+                                    { id: 'video', label: '偶韵新番' },
+                                    { id: 'interact', label: '互动交流' },
+                                ].map(item => (
+                                    <button
+                                        key={item.id}
+                                        onClick={() => setActiveTab(item.id)}
+                                        className={`px-4 py-2 text-sm font-serif font-bold transition-all duration-300 rounded-t-lg relative overflow-hidden group
+                          ${activeTab === item.id ? 'text-[#8B1D1D] bg-[#F2EFE6] dark:bg-[#1A1614]' : 'text-[#8B7E74] hover:text-[#4A3B32] dark:hover:text-[#B0A69D]'}`}
+                                    >
+                                        <span className="relative z-10">{item.label}</span>
+                                        {activeTab === item.id && (
+                                            <div className="absolute top-0 left-0 right-0 h-1 bg-[#8B1D1D]"></div>
+                                        )}
+                                    </button>
+                                ))}
+                            </nav>
+
+                            {/* 右侧控制区 */}
+                            <div className="flex items-center space-x-4">
+                                <button onClick={toggleTheme} className="p-2 rounded-full hover:bg-[#E8DCC5] dark:hover:bg-[#3E342F] text-[#4A3B32] dark:text-[#B0A69D] transition-colors">
+                                    {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+                                </button>
+                                <button onClick={() => setMenuOpen(!menuOpen)} className="md:hidden p-2 text-[#4A3B32] dark:text-[#E5E0D8]">
+                                    {menuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* 移动端菜单 */}
+                        {menuOpen && (
+                            <div className="md:hidden bg-[#FDFBF7] dark:bg-[#2C241F] border-t border-[#E8DCC5] dark:border-[#4A3B32] absolute w-full shadow-xl">
+                                <div className="flex flex-col p-4 space-y-2">
+                                    {[
+                                        { id: 'home', label: '首页' },
+                                        { id: 'policy', label: '政策态势' },
+                                        { id: 'feature', label: '木偶特色' },
+                                        { id: 'product', label: '文创研学' },
+                                        { id: 'video', label: '偶韵新番' },
+                                        { id: 'interact', label: '互动交流' },
+                                    ].map(item => (
+                                        <button
+                                            key={item.id}
+                                            onClick={() => handleNavClick(item.id)}
+                                            className={`text-left px-4 py-3 rounded font-serif ${activeTab === item.id ? 'bg-[#8B1D1D]/10 text-[#8B1D1D] font-bold border-l-4 border-[#8B1D1D]' : 'text-[#5D5148] dark:text-[#9E948D]'}`}
+                                        >
+                                            {item.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </header>
+
+                    {/* 主要内容区域 */}
+                    <main className="container mx-auto px-4 py-8 min-h-[calc(100vh-200px)] max-w-6xl">
+                        {activeTab === 'home' && renderHome()}
+                        {activeTab === 'policy' && renderPolicy()}
+                        {activeTab === 'feature' && renderFeature()}
+                        {activeTab === 'product' && renderProduct()}
+                        {activeTab === 'video' && renderVideo()}
+                        {activeTab === 'interact' && renderInteract()}
+                    </main>
+
+                    {/* 底部 Footer - 沉稳木色 */}
+                    <footer className="bg-[#2C241F] text-[#8B7E74] py-10 text-center text-sm border-t-4 border-[#B45B3E] mt-12 relative overflow-hidden">
+                        {/* 背景纹理模拟 */}
+                        <div className="absolute inset-0 opacity-5 bg-[url('https://www.transparenttextures.com/patterns/wood-pattern.png')] pointer-events-none"></div>
+
+                        <div className="container mx-auto px-4 relative z-10">
+                            <div className="w-12 h-12 bg-[#8B1D1D] text-[#F7F3E8] mx-auto flex items-center justify-center rounded-sm mb-4 text-xl font-serif font-bold">莱</div>
+                            <p className="mb-3 font-serif tracking-widest text-[#E5E0D8]">莱西木偶非遗文化展示平台</p>
+                            <div className="h-px w-24 bg-[#4A3B32] mx-auto mb-4"></div>
+                            <p className="text-xs opacity-60 font-serif">© 2025 薪火相传 · 匠心守艺</p>
+                        </div>
+                    </footer>
+
+                    {/* 全局样式注入 */}
+                    <style>{`
+                /* 传统风格输入框 */
+                .input-traditional {
+                  width: 100%;
+                  padding: 0.75rem 1rem;
+                  background-color: transparent;
+                  border-bottom: 2px solid #E8DCC5;
+                  color: #4A3B32;
+                  outline: none;
+                  font-family: serif;
+                  transition: all 0.3s;
+                }
+                .dark .input-traditional {
+                  border-color: #4A3B32;
+                  color: #E5E0D8;
+                }
+                .input-traditional:focus {
+                  border-color: #8B1D1D;
+                  background-color: rgba(139, 29, 29, 0.02);
+                }
+                
+                /* 动画 */
+                @keyframes fadeIn {
+                  from { opacity: 0; transform: translateY(15px); }
+                  to { opacity: 1; transform: translateY(0); }
+                }
+                .animate-fadeIn {
+                  animation: fadeIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+                }
+
+                /* 滚动条美化 */
+                .custom-scrollbar::-webkit-scrollbar {
+                  width: 6px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-track {
+                  background: #f1f1f1; 
+                }
+                .dark .custom-scrollbar::-webkit-scrollbar-track {
+                  background: #2C241F;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb {
+                  background: #D4C5B0; 
+                  border-radius: 4px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+                  background: #B45B3E; 
+                }
+                
+                /* 竖排文字工具类 */
+                .writing-vertical-rl {
+                  writing-mode: vertical-rl;
+                  text-orientation: upright;
+                }
+              `}</style>
+                </div>
+            );
+        }
+
+        const root = createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+
+</html>
